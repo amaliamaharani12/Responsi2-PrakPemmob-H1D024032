@@ -20,13 +20,30 @@ class WeatherViewModel extends ChangeNotifier {
   WeatherModel? _weather;
   List<LocationModel> _favorites = [];
   bool _isLoading = false;
+  bool _isFahrenheit = false;
   String? _errorMessage;
 
   LocationModel get selectedLocation => _selectedLocation;
   WeatherModel? get weather => _weather;
   List<LocationModel> get favorites => List.unmodifiable(_favorites);
   bool get isLoading => _isLoading;
+  bool get isFahrenheit => _isFahrenheit;
   String? get errorMessage => _errorMessage;
+
+  String get tempUnit => _isFahrenheit ? '°F' : '°C';
+
+  double convertTemp(double celsius) =>
+      _isFahrenheit ? (celsius * 9 / 5) + 32 : celsius;
+
+  String formatTemp(double celsius, {int decimals = 0}) {
+    final val = convertTemp(celsius);
+    return '${decimals == 0 ? val.round() : val.toStringAsFixed(decimals)}$tempUnit';
+  }
+
+  void toggleTemperatureUnit() {
+    _isFahrenheit = !_isFahrenheit;
+    notifyListeners();
+  }
 
   bool get isCurrentLocationFavorite =>
       _favorites.contains(_selectedLocation);

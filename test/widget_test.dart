@@ -12,6 +12,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('WeatherModel parses Open-Meteo JSON response accurately', () {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    String fmt(DateTime d) =>
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
     final sampleJson = {
       'timezone': 'Asia/Jakarta',
       'current': {
@@ -24,11 +30,20 @@ void main() {
         'is_day': 1,
       },
       'daily': {
-        'time': ['2026-11-25', '2026-11-26'],
-        'weather_code': [61, 2],
-        'temperature_2m_max': [30.1, 31.0],
-        'temperature_2m_min': [23.4, 22.8],
-        'precipitation_probability_max': [80, 35],
+        'time': [fmt(yesterday), fmt(today)],
+        'weather_code': [2, 61],
+        'temperature_2m_max': [31.0, 30.1],
+        'temperature_2m_min': [22.8, 23.4],
+        'precipitation_probability_max': [35, 80],
+      },
+      'hourly': {
+        'time': ['${fmt(yesterday)}T09:00', '${fmt(today)}T12:00', '${fmt(today)}T15:00'],
+        'temperature_2m': [27.0, 29.5, 28.0],
+        'relative_humidity_2m': [78, 70, 72],
+        'precipitation_probability': [20, 80, 60],
+        'weather_code': [2, 61, 61],
+        'wind_speed_10m': [10.0, 12.0, 8.5],
+        'is_day': [1, 1, 1],
       },
     };
 
@@ -43,6 +58,8 @@ void main() {
     expect(weather.category, WeatherCategory.rain);
     expect(weather.conditionLabel, 'Hujan Ringan');
     expect(weather.dailyForecasts.length, 2);
+    expect(weather.hourlyForecasts.length, 3);
+    expect(weather.hourlyForDate(today).length, 2);
     expect(weather.todayRainProbability, 80);
   });
 

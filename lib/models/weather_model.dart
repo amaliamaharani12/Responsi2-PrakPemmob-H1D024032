@@ -10,7 +10,7 @@ enum WeatherCategory {
   thunderstorm,
 }
 
-/// Model representing current weather and daily forecast from Open-Meteo API.
+/// Model representing current weather, daily forecast, and hourly forecast from Open-Meteo API.
 class WeatherModel {
   final double temperature2m;
   final int relativeHumidity2m;
@@ -21,6 +21,7 @@ class WeatherModel {
   final bool isDay;
   final String timezone;
   final List<DailyForecastModel> dailyForecasts;
+  final List<HourlyForecastModel> hourlyForecasts;
 
   const WeatherModel({
     required this.temperature2m,
@@ -32,11 +33,13 @@ class WeatherModel {
     required this.isDay,
     required this.timezone,
     required this.dailyForecasts,
+    this.hourlyForecasts = const [],
   });
 
   factory WeatherModel.fromJson(Map<String, dynamic> json) {
     final current = json['current'] as Map<String, dynamic>? ?? {};
     final daily = json['daily'] as Map<String, dynamic>? ?? {};
+    final hourly = json['hourly'] as Map<String, dynamic>? ?? {};
 
     final dates = (daily['time'] as List<dynamic>? ?? []).cast<String>();
     final codes = (daily['weather_code'] as List<dynamic>? ?? [])
@@ -67,6 +70,44 @@ class WeatherModel {
       );
     }
 
+    final hourlyTimes = (hourly['time'] as List<dynamic>? ?? []).cast<String>();
+    final hourlyTemps = (hourly['temperature_2m'] as List<dynamic>? ?? [])
+        .map((e) => (e as num?)?.toDouble() ?? 0.0)
+        .toList();
+    final hourlyHumidity =
+        (hourly['relative_humidity_2m'] as List<dynamic>? ?? [])
+            .map((e) => (e as num?)?.toInt() ?? 0)
+            .toList();
+    final hourlyRainProb =
+        (hourly['precipitation_probability'] as List<dynamic>? ?? [])
+            .map((e) => (e as num?)?.toInt() ?? 0)
+            .toList();
+    final hourlyCodes = (hourly['weather_code'] as List<dynamic>? ?? [])
+        .map((e) => (e as num?)?.toInt() ?? 0)
+        .toList();
+    final hourlyWinds = (hourly['wind_speed_10m'] as List<dynamic>? ?? [])
+        .map((e) => (e as num?)?.toDouble() ?? 0.0)
+        .toList();
+    final hourlyIsDay = (hourly['is_day'] as List<dynamic>? ?? [])
+        .map((e) => ((e as num?)?.toInt() ?? 1) == 1)
+        .toList();
+
+    final hourlyList = <HourlyForecastModel>[];
+    for (var i = 0; i < hourlyTimes.length; i++) {
+      hourlyList.add(
+        HourlyForecastModel(
+          time: DateTime.parse(hourlyTimes[i]),
+          temperature2m: i < hourlyTemps.length ? hourlyTemps[i] : 0.0,
+          relativeHumidity2m: i < hourlyHumidity.length ? hourlyHumidity[i] : 0,
+          precipitationProbability:
+              i < hourlyRainProb.length ? hourlyRainProb[i] : 0,
+          weatherCode: i < hourlyCodes.length ? hourlyCodes[i] : 0,
+          windSpeed10m: i < hourlyWinds.length ? hourlyWinds[i] : 0.0,
+          isDay: i < hourlyIsDay.length ? hourlyIsDay[i] : true,
+        ),
+      );
+    }
+
     return WeatherModel(
       temperature2m: (current['temperature_2m'] as num?)?.toDouble() ?? 0.0,
       relativeHumidity2m:
@@ -79,11 +120,33 @@ class WeatherModel {
       isDay: ((current['is_day'] as num?)?.toInt() ?? 1) == 1,
       timezone: json['timezone'] as String? ?? 'auto',
       dailyForecasts: forecasts,
+      hourlyForecasts: hourlyList,
     );
   }
 
-  DailyForecastModel? get todayForecast =>
-      dailyForecasts.isNotEmpty ? dailyForecasts.first : null;
+  /// Returns today's forecast (matching current date, or falling back to first entry).
+  DailyForecastModel? get todayForecast {
+    if (dailyForecasts.isEmpty) return null;
+    final now = DateTime.now();
+    for (final item in dailyForecasts) {
+      if (item.date.year == now.year &&
+          item.date.month == now.month &&
+          item.date.day == now.day) {
+        return item;
+      }
+    }
+    return dailyForecasts.length > 1 ? dailyForecasts[1] : dailyForecasts.first;
+  }
+
+  /// Filters hourly entries belonging to [date].
+  List<HourlyForecastModel> hourlyForDate(DateTime date) {
+    return hourlyForecasts
+        .where((h) =>
+            h.time.year == date.year &&
+            h.time.month == date.month &&
+            h.time.day == date.day)
+        .toList();
+  }
 
   int get todayRainProbability =>
       todayForecast?.precipitationProbabilityMax ?? 0;
@@ -169,8 +232,8 @@ class WeatherModel {
     switch (category) {
       case WeatherCategory.clear:
         return isDay
-            ? 'Langit cerah sekali, waktunya jalan santai!'
-            : 'Malam cerah berbintang, nyaman untuk istirahat.';
+            ? 'Langit cerah sekali, Bunny dan Cat siap jalan santai!'
+            : 'Malam cerah berbintang, Bunny dan Cat siap istirahat.';
       case WeatherCategory.partlyCloudy:
         return 'Awan lembut menemani langit hari ini.';
       case WeatherCategory.cloudy:
@@ -178,11 +241,11 @@ class WeatherModel {
       case WeatherCategory.fog:
         return 'Udara berkabut, hati-hati di perjalanan.';
       case WeatherCategory.drizzle:
-        return 'Gerimis manja turun, siapkan payung kecil.';
+        return 'Gerimis manja turun, Bunny dan Cat berbagi payung.';
       case WeatherCategory.rain:
         return 'Sedang hujan, jangan lupa bawa payung ya!';
       case WeatherCategory.snow:
-        return 'Udara dingin bersalju, pakai jaket hangat!';
+        return 'Udara dingin bersalju, pakai syal hangat!';
       case WeatherCategory.thunderstorm:
         return 'Ada badai petir, lebih aman di dalam ruangan.';
     }
@@ -203,6 +266,31 @@ class DailyForecastModel {
     required this.temperatureMax,
     required this.temperatureMin,
     required this.precipitationProbabilityMax,
+  });
+
+  WeatherCategory get category => WeatherModel.categoryFromCode(weatherCode);
+
+  String get conditionLabel => WeatherModel.labelFromCode(weatherCode);
+}
+
+/// Hourly weather forecast entry from Open-Meteo `hourly` array.
+class HourlyForecastModel {
+  final DateTime time;
+  final double temperature2m;
+  final int relativeHumidity2m;
+  final int precipitationProbability;
+  final int weatherCode;
+  final double windSpeed10m;
+  final bool isDay;
+
+  const HourlyForecastModel({
+    required this.time,
+    required this.temperature2m,
+    required this.relativeHumidity2m,
+    required this.precipitationProbability,
+    required this.weatherCode,
+    required this.windSpeed10m,
+    required this.isDay,
   });
 
   WeatherCategory get category => WeatherModel.categoryFromCode(weatherCode);
