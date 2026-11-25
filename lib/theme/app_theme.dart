@@ -51,8 +51,6 @@ class AppTheme {
   );
 
   static ThemeData get lightTheme {
-    final baseTextTheme = GoogleFonts.nunitoTextTheme();
-
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
@@ -65,39 +63,39 @@ class AppTheme {
         onSurface: textPrimary,
       ),
       scaffoldBackgroundColor: pastelBlueLight,
-      textTheme: baseTextTheme.copyWith(
-        displayLarge: baseTextTheme.displayLarge?.copyWith(
+      textTheme: TextTheme(
+        displayLarge: GoogleFonts.nunito(
           fontSize: 64,
           fontWeight: FontWeight.w800,
           color: textPrimary,
           letterSpacing: -1.5,
         ),
-        headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+        headlineMedium: GoogleFonts.nunito(
           fontSize: 24,
           fontWeight: FontWeight.w800,
           color: textPrimary,
         ),
-        titleLarge: baseTextTheme.titleLarge?.copyWith(
+        titleLarge: GoogleFonts.nunito(
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: textPrimary,
         ),
-        titleMedium: baseTextTheme.titleMedium?.copyWith(
+        titleMedium: GoogleFonts.nunito(
           fontSize: 16,
           fontWeight: FontWeight.w700,
           color: textPrimary,
         ),
-        bodyLarge: baseTextTheme.bodyLarge?.copyWith(
+        bodyLarge: GoogleFonts.nunito(
           fontSize: 15,
           fontWeight: FontWeight.w600,
           color: textPrimary,
         ),
-        bodyMedium: baseTextTheme.bodyMedium?.copyWith(
+        bodyMedium: GoogleFonts.nunito(
           fontSize: 13.5,
           fontWeight: FontWeight.w600,
           color: textSecondary,
         ),
-        labelLarge: baseTextTheme.labelLarge?.copyWith(
+        labelLarge: GoogleFonts.nunito(
           fontSize: 14,
           fontWeight: FontWeight.w700,
           color: textPrimary,
